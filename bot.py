@@ -1,219 +1,170 @@
 import os
+import cloudscraper
 from dotenv import load_dotenv, find_dotenv
 import os
-import re
 import openai
 import telebot
 import requests
-import datetime
 import time
 from bs4 import BeautifulSoup
-from dnevnikru import Dnevnik
-from pydub import AudioSegment
-from ffmpeg import FFmpeg, Progress
+from ffmpeg import FFmpeg
 
-load_dotenv(find_dotenv())
-today = datetime.datetime.now()
-today_string = today.strftime('%d/%m/%Y').replace("/", ".")
-current_date = datetime.datetime.now() + datetime.timedelta(days=1)
-current_date_string = current_date.strftime('%d/%m/%Y').replace("/", ".")
-dn = Dnevnik(login=os.getenv("login"), password=os.getenv("password"))
+
+load_dotenv(find_dotenv("a.env"))
 openai.api_key = os.getenv("TOKEN_AI")
 token = os.getenv("TOKEN")
 bot = telebot.TeleBot(token)
-print(today_string)
+swear = "CAACAgIAAxkBAAEIDPpkCJcDLIQ6GQABkFnHOSZBbLtCIK4AAs4WAALpLuFLd0C2qVG6ir4uBA" # sticker of Telegram
+dont = "CAACAgIAAxkBAAEH06tj83vHZ7LdlAPrVFGp016o-aFQcAACZgYAAhyS0gNzji83oMbdci4E" # sticker of Telegram
+output = 0
+def ne_pon(message):
+  general = message.chat.id
+  bot.reply_to(message, text="My brother, I didn't understand what you said")
+  bot.send_sticker(general, reply_to_message_id=message.message_id, sticker=dont)
 
+def skverna(message):
+  general = message.chat.id
+  bot.reply_to(message, text="My brother don't swear")
+  bot.send_sticker(general, reply_to_message_id=message.message_id, sticker=swear)
 
-@bot.message_handler(func=lambda _: True)
-def handle_message(message):
-    general = message.chat.id
-    def ne_pon():
-        bot.reply_to(message, text='Ле брад не понял че сказал')
-        bot.send_sticker(general, reply_to_message_id=message.message_id, sticker="CAACAgIAAxkBAAEH06tj83vHZ7LdlAPrVFGp016o-aFQcAACZgYAAhyS0gNzji83oMbdci4E")
-    def pon():
-        print("Не закрепил :(")
-    try:
-        response = openai.Moderation.create(
-            input=message.text
-        )
-        output = response["results"][0]["flagged"]
-        if output:
-            bot.reply_to(message, text='Ле брад не сквернословь')
-            bot.send_sticker(general, reply_to_message_id=message.message_id, sticker="CAACAgIAAxkBAAEHxStj7kbfmAVLWtplSQwVQfQDQHtc9AAC0AQAAhyS0gNOf6NUwIBZfi4E")
-        else:
-            if re.match(r'/gpt', message.text):
-                try:
-                    input = input = f"{message.text}\nPlease write answer on Russia language"
-                    input = input.removeprefix('/gpt ')
-                    print(input)
-                    completion = openai.ChatCompletion.create( model="gpt-3.5-turbo", messages=[{"role": "user", "content": input}])
-                    output = completion.choices[0].message
-                    bot.reply_to(message, text=output.content)
-                except:
-                    ne_pon()
-            elif re.match(r"/img", message.text):
-                try:
-                    response = openai.Image.create(
-                        prompt=message.text,
-                        n=1,
-                        size="1024x1024"
-                    )
-                    image_url = response['data'][0]['url']
-                    bot.send_photo(general, reply_to_message_id=message.message_id, photo=image_url)
-                    print(message.text, message.chat.id, "  ---  ", image_url)
-                except:
-                    ne_pon()
-            elif re.match(r"/code", message.text):
-                try:
-                    print(message.text)
-                    response = openai.Completion.create(
-                        model="code-davinci-002",
-                        prompt=message.text,
-                        temperature=0,
-                        max_tokens=4000,
-                        top_p=1.0,
-                        frequency_penalty=0.0,
-                        presence_penalty=0.0,
-                    )
-                    bot.reply_to(message, text=response['choices'][0]['text'])
-                    print(message.text, message.chat.id, "  ---  ", response['choices'][0]['text'])
-                except:
-                    ne_pon()
-            elif re.match(r"/trn", message.text):
-                try:
-                    response = openai.Completion.create(
-                        model="text-davinci-003",
-                        prompt="Translate to Russian language\n" + message.reply_to_message.text,
-                        temperature=0.3,
-                        max_tokens=2000,
-                        top_p=1.0,
-                        frequency_penalty=0.0,
-                        presence_penalty=0.0
-                    )
-                    bot.reply_to(message, text=response['choices'][0]['text'])
-                    print(message.text, message.chat.id, "  ---  ", response['choices'][0]['text'])
-                except:
-                    ne_pon()
-    except:
-        ne_pon()
-    if re.match(r"/help", message.text):
-        bot.reply_to(message, text="""
-            
-/gpt {текст} - генерация текста
-/img {текст} - генерация картинки
-/code {текст} - поиск ошибок в коде/генерация кода
-/trn {ответ на сообщение} - перевод текста на русский
-/wth - узнать погоду
-/dze - узнать домашку
-            """)
-    elif re.match(r"/dze", message.text):
-            try:
-                homework = dn.homework(datefrom=current_date_string, days=0)
-                homework2 = dn.homework(datefrom=today_string, days=0)
-                put = homework
-                put2 = homework2
-                results = ['', '', '', '', '', '', '']
-                results2 = ['', '', '', '', '', '', '']
-                for i in range(7):
-                    try:
-                        if put["homework"][i] != "None":
-                            output = put["homework"][i]
-                            result = output[0] + " - " + output[1]
-                            results[i] = result
-                    except:
-                        output = ["None", "None"]
-                for i in range(7):
-                    try:
-                        if put2["homework"][i] != "None":
-                            output = put2["homework"][i]
-                            result2 = output[0] + " - " + output[1]
-                            results2[i] = result2
-                    except:
-                        output = ["None", "None"]
-                if results[0] == "":
-                    bot.reply_to(message, text="Дебил завтра выходной")
-                else:
-                    results = f" На завтра: \n\n{results[0]}\n\n{results[1]}\n\n{results[2]}\n\n{results[3]}\n\n{results[4]}\n\n{results[5]}\n\n{results[6]}\n\n"
-                    bot.reply_to(message, text=results)
-                    msg_id = message.message_id + 1
-                    bot.pin_chat_message(general, message_id=msg_id)
-                if results2[0] == "":
-                    bot.reply_to(message, text="Дебил сегодня выходной")
-                else:
-                    results2 = f"На сегодня: \n\n{results2[0]}\n\n{results2[1]}\n\n{results2[2]}\n\n{results2[3]}\n\n{results2[4]}\n\n{results2[5]}\n\n{results2[6]}\n"
-                    bot.reply_to(message, text=results2)
-                print(message.text, message.chat.id, "  ---  ", results)
-                print(message.text, message.chat.id, "  ---  ", results2)
-            except:
-                ne_pon()
-    elif re.match(r"/wth", message.text):
-        try:
-            url = "https://yandex.com.am/weather/details/10-day-weather?lat=54.584464&lon=73.638021&via=ms"
-            response = requests.get(url, proxies=dict(http='socks5://yEog1h:dU8eAw@193.233.60.56:9641',
-                                                      https='socks5://yEog1h:dU8eAw@193.233.60.56:9641'))
-            bs = BeautifulSoup(response.text, "lxml")
-            temp = bs.find_all('span', 'a11y-hidden')[0]
-            temp2 = bs.find_all('span', 'a11y-hidden')[3]
-            temp3 = bs.find_all('span', 'a11y-hidden')[6]
-            temp4 = bs.find_all('span', 'a11y-hidden')[9]
-            temp5 = bs.find_all('span', 'a11y-hidden')[12]
-            output = f'''  
-            
-Таврическое
-{temp.text}:
-        
-{temp2.text}
-{temp3.text}
-{temp4.text}
-{temp5.text}
-    '''
-            bot.reply_to(message, text=output)
-            print(message.text, message.chat.id, "  ---  ", output)
-        except:
-            ne_pon()
-
-
-
-@bot.message_handler(content_types=['voice'])
-def repeat_all_message(message):
-    def ne_pon():
-        bot.reply_to(message, text='Ле брад не понял че сказал')
-        bot.send_sticker(message.chat.id, reply_to_message_id=message.message_id, sticker="CAACAgIAAxkBAAEH06tj83vHZ7LdlAPrVFGp016o-aFQcAACZgYAAhyS0gNzji83oMbdci4E")
-    try:
-        file_info = bot.get_file(message.voice.file_id)
-        file = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(token, file_info.file_path))
-
-        with open('voice.ogg','wb') as f:
-            f.write(file.content)
-        time.sleep(2)
-        ffmpeg = (
-            FFmpeg()
-            .option("y")
-            .input("voice.ogg")
-            .output(
-                "output.mp3",
-                {"codec:v": "libx264"},
-                vf="scale=1280:-1",
-                preset="veryslow",
-                crf=24,
-            )
-        )
-
-        ffmpeg.execute()
-        time.sleep(4)
-        audio_file = open("output.mp3", "rb")
-        transcript = openai.Audio.translate("whisper-1", audio_file)
-        output = transcript.text
-        output2 = output
-        print(output)
-        bot.reply_to(message, text=output)
-        input = f"Please write answer on Russia language\n{output2}"
+@bot.message_handler(commands=['gpt']) # generating text using openai
+def gpt_input(message):
+  try:
+      response = openai.Moderation.create(input=message.text) # checking the adequacy of the request
+      output = response["results"][0]["flagged"]
+      if output:
+        skverna(message)
+      else:
+        input = input = f"{message.text}\nPlease write answer on Russia language"
+        input = input.removeprefix('/gpt ')
         print(input)
         completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": input}])
         output = completion.choices[0].message
         bot.reply_to(message, text=output.content)
-    except:
-        ne_pon()
+  except:
+    ne_pon(message)
 
 
-bot.infinity_polling()
+@bot.message_handler(commands=['img']) # generating image using openai
+def img_input(message):
+  general = message.chat.id # Setting a variable to store chat_id
+  try:
+    response = openai.Moderation.create(input=message.text) # checking the adequacy of the request
+    output = response["results"][0]["flagged"]
+    if output:
+      skverna(message)
+    else:
+      response = openai.Image.create(prompt=message.text, n=1, size="1024x1024")
+      image_url = response['data'][0]['url']
+      bot.send_photo(general, reply_to_message_id=message.message_id, photo=image_url)
+  except:
+    ne_pon(message)
+
+
+@bot.message_handler(commands=['trn']) # we translate the text into any language using openai
+def trn_input(message):
+  try:
+      response = openai.Moderation.create(input=message.text)
+      output = response["results"][0]["flagged"]
+      if output:
+        skverna(message)
+      else:
+        input = message.text.removeprefix('/trn')
+        if input == "": # setting the default value
+          input = 'Русский' #Russian
+        print(input)
+        content = f"Переведи на {input} язык:\n{message.reply_to_message.text}" # Translate to {input} language
+        completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": content}])
+        output = completion.choices[0].message
+        bot.reply_to(message, text=output.content)
+  except:
+    ne_pon(message)
+
+
+@bot.message_handler(commands=['help']) # view the capabilities of the bot
+def help(message):
+  bot.reply_to(message, text="/gpt {текст} - генерация текста\n/img {текст} - генерация картинки\n/trn {пр: Русский} - перевод текста на любой язык\n/wth {пр: Moscow} - узнать погоду\n\n\n /trn использовать ответом на сообщение")
+""" 
+/gpt {text} - text generation
+/img {text} - image generation
+/trn {ex: Russian} - text translation to any language
+/wth {ex: Moscow} - find out the weather
+
+Use /trn as a reply to a message.
+"""
+
+@bot.message_handler(commands=['wth']) # we get the weather of any city
+def wth(message):
+  try:
+      input = message.text.removeprefix("/wth ")
+      url = f"https://yandex.com.am/weather/{input}/details/10-day-weather?via=ms"
+      response = requests.get(url)
+      bs = BeautifulSoup(response.text, "lxml")
+      temp = bs.find_all('span', 'a11y-hidden')[0] # date
+      temp2 = bs.find_all('span', 'a11y-hidden')[3] # morning
+      temp3 = bs.find_all('span', 'a11y-hidden')[6] # day
+      temp4 = bs.find_all('span', 'a11y-hidden')[9] # evening
+      temp5 = bs.find_all('span', 'a11y-hidden')[12] # night
+      output = f'\n{input}\n{temp.text}:\n\n{temp2.text}\n{temp3.text}\n{temp4.text}\n{temp5.text}'
+      bot.reply_to(message, text=output)
+  except:
+      ne_pon(message)
+
+
+@bot.message_handler(commands=['inf']) #
+def inf(message):
+  scraper = cloudscraper.create_scraper()
+  url = "https://downdetector.com/status/" # url of the site that checks status of the app
+  url += f"{message.text}/" #adding name app for url
+  out = BeautifulSoup(scraper.get(url).text, "lxml")
+  temp = out.find("div", "h2 entry-title").text
+  bot.reply_to(message, text = temp)
+  def ne_pon():
+      print("no recent errors")
+  try:
+      temp2 = out.find('p', "text-danger").text
+      bot.reply_to(message, text = temp2)
+  except:
+      ne_pon(message)
+
+@bot.message_handler(content_types=['voice']) # responds to any audio
+def repeat_all_message(message):
+  general = message.chat.id
+  try:
+    file_info = bot.get_file(message.voice.file_id)
+    file = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format( # download the audio .ogg from telegram servers
+      token, file_info.file_path))
+    time.sleep(2)
+    with open('voice.ogg', 'wb') as f:
+      f.write(file.content)
+    ffmpeg = (FFmpeg().option("y").input("voice.ogg").output(  # .ogg to .mp3
+      "output.mp3",
+      {"codec:v": "libx264"},
+      vf="scale=1280:-1",
+      preset="veryslow",
+      crf=24,
+    ))
+
+    ffmpeg.execute()
+    time.sleep(2) # add if the file does not have time to process
+    audio_file = open("output.mp3", "rb")
+    transcript = openai.Audio.translate("whisper-1", audio_file)
+    output = transcript.text
+    output2 = output
+    print(output)
+    bot.reply_to(message, text=output)
+    input = f"Please write answer on Russia language\n{output2}"
+    print(input)
+    response = openai.Moderation.create(input=input)
+    output = response["results"][0]["flagged"]
+    if output:
+      skverna(message)
+    else:
+      completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": input}])
+      output = completion.choices[0].message
+      bot.reply_to(message, text=output.content)
+  except:
+    ne_pon(message)
+
+
+bot.infinity_polling() # launching an infinite bot
