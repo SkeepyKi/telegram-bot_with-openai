@@ -4,4 +4,6 @@
 3) put in cmd: pip install -r requirements.txt -U
 4) we wait and insert the following: python bot.py
 
+You can try it out here: https://t.me/GPTkir_bot
+
 #P.S. the only thing is that there is a little Russian in the code
