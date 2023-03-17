@@ -1,9 +1,10 @@
-# 4 steps for the bot to work:
-1) download bot.py, requirements.txt, and a.env
+# 5 steps for the bot to work:
+1) download the zip-archive and extract it to a convenient location for you
 2) go to a.env and fill in the tokens
-3) put in cmd: pip install -r requirements.txt -U
-4) we wait and insert the following: python bot.py
+In cmd:
+3) cd "location of repositories" 
+Example: cd C:\WorkSpace
+4) pip install -r requirements.txt -U
+5) we wait and insert the following: python bot.py
 
-You can try it out here: https://t.me/GPTkir_bot
-
-#P.S. the only thing is that there is a little Russian in the code
+I'm in telegram: https://t.me/Skeepy_Ki
