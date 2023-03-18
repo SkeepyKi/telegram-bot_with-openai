@@ -3,3 +3,4 @@ openai
 pyTelegramBotAPI
 beautifulsoup4
 ffmpeg-python
+python-dotenv
