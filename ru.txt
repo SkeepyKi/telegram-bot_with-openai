@@ -1,0 +1,1 @@
+{"vk": "vkontakte", "alfa": "alfabank", "sber": "sberbank", "tinkoff": "tinkoffbank", "wb": "wildberries", "ok": "odnoklassniki", "ymusic": "yandexmusic", "ybrowser": "yandexbrowser", "ygo": "yandexgo", "ymarket": "yandexmarket", "pbank": "pochtabank", "ykarty": "yandexkarty", "smarket": "sbermarket"}
