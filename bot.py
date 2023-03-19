@@ -183,7 +183,7 @@ def change(message):
 @bot.message_handler(content_types=["infa"])
 def inf_ru(message):
 	try:
-		app = input()
+		app = message.text.removeprefix("/infa ")
 		dct = json.load(open(config_ru))
 		if app in dct:
 			url = f"https://downdetector.br-analytics.ru/{dct[app]}"
