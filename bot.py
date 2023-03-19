@@ -24,6 +24,7 @@ ronaldu = "CAACAgIAAxkBAAEIKQFkEzHFXSYGgDZ5UyXfPDvVP9yprQACkxEAAj_8yEsIJ-TtlM4BT
 
 # other 
 config = "config.txt"
+config_ru = "ru.txt"
 
 def ne_pon(message): # for errors during bot operation
   general = message.chat.id
@@ -179,6 +180,21 @@ def change(message):
     except:
         bot.reply_to(message, "Perhaps you are not on the list?\nUse /reg")
 
+@bot.message_handler(content_types=["infa"])
+def inf_ru(message):
+	try:
+		app = input()
+		dct = json.load(open(config_ru))
+		if app in dct:
+			url = f"https://downdetector.br-analytics.ru/{dct[app]}"
+		else:
+			url = f"https://downdetector.br-analytics.ru/{app}"
+		response = requests.get(url)
+		bs = BeautifulSoup(response.text, "lxml")
+		temp = bs.find('p', 'section_header-status_desc')
+		bot.reply_to(message, temp.text)
+	except:
+		ne_pon(message)
 
 @bot.message_handler(content_types=["text"])
 def communication(message):
@@ -195,5 +211,6 @@ def communication(message):
                 gpt_input(message)
     except:
         reg(message)
+
 
 bot.infinity_polling() # launching an infinite bot
