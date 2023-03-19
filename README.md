@@ -7,3 +7,4 @@
 <h3 align="center">4) pip install -r requirements.txt -U</h3>
 <h3 align="center">5) we wait and insert the following: python bot.py</h3>
 I'm in telegram: https://t.me/Skeepy_Ki
+This bot: https://t.me/GPTkir_bot
